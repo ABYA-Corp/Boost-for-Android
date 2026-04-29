@@ -41,6 +41,7 @@ jobs:
           ./build-android.sh \
             --boost=${BOOST_VERSION} \
             --with-libraries=chrono,thread,iostreams,date_time,filesystem,atomic,system \
+            --arch=arm64-v8a \
             $NDK_ROOT
 
       - name: Verify built libraries
