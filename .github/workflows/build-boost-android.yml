@@ -1,15 +1,24 @@
-name: Build Boost 1.90 Android (custom libs)
+name: Build Boost Android
 
 on:
   workflow_dispatch:
+    inputs:
+      boost_version:
+        description: "Boost version"
+        required: true
+        default: "1.90.0"
+      ndk_version:
+        description: "NDK version"
+        required: true
+        default: "26d"
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     env:
-      BOOST_VERSION: 1.90.0
-      NDK_VERSION: 26d
+      BOOST_VERSION: ${{ github.event.inputs.boost_version }}
+      NDK_VERSION: ${{ github.event.inputs.ndk_version }}
 
     steps:
       - name: Checkout repo (tu fork)
@@ -48,8 +57,16 @@ jobs:
         run: |
           find build -name "libboost*.a"
 
-      - name: Checkout repo (tu fork)
-        uses: actions/checkout@v5
+      - name: Package build
+        run: |
+          tar -czf boost-${BOOST_VERSION}-ndk-${NDK_VERSION}-arm64.tar.gz build
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
         with:
-          name: boost-android-${{ env.BOOST_VERSION }}
-          path: build
+          tag_name: boost-${{ env.BOOST_VERSION }}-ndk-${{ env.NDK_VERSION }}
+          name: Boost ${{ env.BOOST_VERSION }} (NDK ${{ env.NDK_VERSION }})
+          draft: false
+          prerelease: false
+          files: boost-${{ env.BOOST_VERSION }}-ndk-${{ env.NDK_VERSION }}-arm64.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
