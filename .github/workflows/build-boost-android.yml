@@ -59,6 +59,8 @@ jobs:
       - name: Verify built libraries
         run: |
           find build -name "libboost*.a"
+      - name: Clean output
+        run: rm -rf output
       - name: Normalize and copy libs
         run: |
           ABIS="arm64-v8a armeabi-v7a x86 x86_64"
@@ -78,7 +80,7 @@ jobs:
         run: |
           mkdir -p output/include
 
-          HEADER_PATH=$(find build -type d -path "*/include/boost" | head -n 1)
+          HEADER_PATH=$(find build/out -type d -path "*/include/boost-*/boost" -print -quit)
 
           if [ -z "$HEADER_PATH" ]; then
             echo "ERROR: Boost headers not found"
@@ -86,9 +88,20 @@ jobs:
           fi
 
           cp -r "$HEADER_PATH" output/include/
+      - name: Verify headers
+        run: |
+          ls output/include/boost | head
       - name: Package build
         run: |
           tar -czf boost-${BOOST_VERSION}-ndk-${NDK_VERSION}.tar.gz output
+      - name: Delete existing release (if exists)
+        continue-on-error: true
+        run: |
+          gh release delete boost-${BOOST_VERSION}-ndk-${NDK_VERSION} -y || true
+          git tag -d boost-${BOOST_VERSION}-ndk-${NDK_VERSION} || true
+          git push origin :refs/tags/boost-${BOOST_VERSION}-ndk-${NDK_VERSION} || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
